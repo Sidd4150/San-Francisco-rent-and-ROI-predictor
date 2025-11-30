@@ -1,0 +1,411 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f7fa;
+}
+
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.App-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.App-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.App-header p {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.App-main {
+  flex: 1;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-section, .map-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-section h2, .map-section h2 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+/* Form Styles */
+.property-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  padding: 0.75rem;
+  border: 2px solid #e1e5eb;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-btn.loading {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Map Styles */
+.coordinates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e1e5eb;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.map-help {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+
+/* Prediction Result Styles */
+.result-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.prediction-result h2 {
+  margin-top: 0;
+  color: #333;
+  text-align: center;
+}
+
+.result-main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 8px;
+}
+
+.estimated-rent h3 {
+  margin: 0 0 1rem 0;
+  color: #555;
+}
+
+.rent-amount {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.confidence-range h4 {
+  margin: 0 0 0.5rem 0;
+  color: #555;
+}
+
+.range {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  color: #764ba2;
+}
+
+.property-summary {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.property-summary h4 {
+  margin-top: 0;
+  color: #555;
+}
+
+.property-summary ul {
+  list-style: none;
+  padding: 0;
+}
+
+.property-summary li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e1e5eb;
+}
+
+.property-summary li:last-child {
+  border-bottom: none;
+}
+
+.additional-info {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-left: 4px solid #667eea;
+  border-radius: 4px;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* Investment Section */
+.investment-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 2px dashed #667eea;
+  margin-top: 0.5rem;
+}
+
+.investment-section label {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.investment-section small {
+  color: #888;
+  font-size: 0.85rem;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* ROI Analysis Styles */
+.roi-analysis {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.roi-analysis h3 {
+  margin-top: 0;
+  color: white;
+  text-align: center;
+  font-size: 1.8rem;
+}
+
+.roi-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.roi-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.roi-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: #f0f0f0;
+  font-size: 1rem;
+}
+
+.roi-percentage {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.5rem 0;
+}
+
+.roi-amount {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.5rem 0;
+}
+
+.roi-card p {
+  margin: 0;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.investment-summary {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.investment-summary h4 {
+  color: white;
+  margin-top: 0;
+}
+
+.investment-summary ul {
+  list-style: none;
+  padding: 0;
+}
+
+.investment-summary li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f0f0f0;
+}
+
+.investment-summary li:last-child {
+  border-bottom: none;
+}
+
+.roi-interpretation {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.roi-excellent {
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid #2ecc71;
+}
+
+.roi-good {
+  background: rgba(241, 196, 15, 0.2);
+  border: 1px solid #f1c40f;
+}
+
+.roi-poor {
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid #e74c3c;
+}
+
+.roi-interpretation p {
+  margin: 0;
+  color: white;
+}
+
+/* Error Message */
+.error-message {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fee;
+  border-left: 4px solid #f55;
+  border-radius: 4px;
+  color: #c33;
+}
+
+.error-message p {
+  margin: 0;
+}
+
+/* Footer */
+.App-footer {
+  background: #333;
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: auto;
+}
+
+.App-footer p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
