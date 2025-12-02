@@ -34,11 +34,13 @@ function App() {
     setPrediction(null);
     
     try {
+      console.log('Sending data:', formData); // Debug log
       const response = await axios.post(`${API_BASE_URL}/predict`, formData);
+      console.log('Received response:', response.data); // Debug log
       setPrediction(response.data);
       setPropertyData(formData);
     } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred while predicting rent');
+      setError(err.response?.data?.error || err.response?.data?.detail || 'An error occurred while predicting rent');
       console.error('Prediction error:', err);
     } finally {
       setLoading(false);

@@ -251,15 +251,29 @@ body {
 /* Investment Section */
 .investment-section {
   background: #f8f9fa;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: 8px;
-  border: 2px dashed #667eea;
-  margin-top: 0.5rem;
+  border: 2px solid #e1e5eb;
+  margin-top: 1rem;
 }
 
-.investment-section label {
+.investment-section h3 {
+  margin-top: 0;
   color: #667eea;
-  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.investment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.investment-section .form-group label {
+  color: #555;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .investment-section small {
@@ -268,6 +282,52 @@ body {
   display: block;
   margin-top: 0.5rem;
 }
+
+/* Location Section */
+.location-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 2px solid #e1e5eb;
+}
+
+.location-section h3 {
+  margin-top: 0;
+  color: #667eea;
+  font-size: 1.2rem;
+}
+
+.coordinates-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e1e5eb;
+}
+
+.geocode-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+  transition: background 0.3s;
+}
+
+.geocode-btn:hover:not(:disabled) {
+  background: #5a67d8;
+}
+
+.geocode-btn:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
 
 /* ROI Analysis Styles */
 .roi-analysis {
@@ -379,6 +439,248 @@ body {
 .roi-interpretation p {
   margin: 0;
   color: white;
+}
+
+/* Cash Flow Analysis */
+.cash-flow-analysis {
+  background: #f5f7fa;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-top: 2rem;
+  border: 1px solid #e1e5eb;
+}
+
+.cash-flow-analysis h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+.cash-flow-summary {
+  margin: 2rem 0;
+}
+
+.investment-decision {
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.investment-decision.positive {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+}
+
+.investment-decision.negative {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+}
+
+.investment-decision h2 {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+}
+
+.monthly-comparison {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+.comparison-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.comparison-item span {
+  color: white;
+}
+
+.comparison-item span.positive {
+  color: #7CFC00 !important;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.comparison-item span.negative {
+  color: #FFD700 !important;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.comparison-item:last-child {
+  border-bottom: none;
+}
+
+.comparison-item.net-result {
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(255, 255, 255, 0.5);
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+
+.cash-flow-amount {
+  font-size: 1.5rem;
+  margin: 1rem 0;
+}
+
+.cash-flow-amount span {
+  font-weight: 700;
+}
+
+.recommendation {
+  font-size: 1.1rem;
+  margin: 1rem 0 0 0;
+  line-height: 1.6;
+}
+
+.cash-flow-breakdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.income-section, .expense-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.income-section h4, .expense-section h4 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.income-section ul, .expense-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.income-section li, .expense-section li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.income-section li:last-child, .expense-section li:last-child {
+  border-bottom: none;
+}
+
+.income-section .total, .expense-section .total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid #e1e5eb;
+}
+
+.positive {
+  color: #27ae60;
+}
+
+.negative {
+  color: #e74c3c;
+}
+
+.roi-metrics.advanced {
+  margin: 2rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.roi-metrics.advanced .roi-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.roi-metrics.advanced .roi-card h4 {
+  color: #555;
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.roi-metrics.advanced .roi-percentage {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0.5rem 0;
+}
+
+.roi-metrics.advanced .roi-percentage.negative,
+.roi-metrics.advanced .roi-amount.negative {
+  color: #e74c3c;
+}
+
+.roi-metrics.advanced .roi-percentage.positive,
+.roi-metrics.advanced .roi-amount.positive {
+  color: #27ae60;
+}
+
+.roi-metrics.advanced .roi-amount {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0.5rem 0;
+}
+
+.roi-metrics.advanced .roi-card p {
+  margin: 0;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+.investment-details {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 2rem;
+}
+
+.investment-details h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.investment-details ul {
+  list-style: none;
+  padding: 0;
+}
+
+.investment-details li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.investment-details li:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .cash-flow-breakdown {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Error Message */

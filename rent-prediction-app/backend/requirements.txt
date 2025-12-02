@@ -1,9 +1,15 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.3
-numpy==1.26.2
-pandas==2.1.4
-scikit-learn==1.3.2
-xgboost==2.0.3
-python-multipart==0.0.6
-setuptools
+# San Francisco Rent Prediction API - Requirements
+# Python 3.11 required for scikit-learn compatibility
+
+# Web Framework
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+joblib>=1.3.0
+
+# HTTP Requests (for geocoding)
+requests>=2.31.0
