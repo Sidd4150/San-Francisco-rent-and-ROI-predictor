@@ -3,8 +3,7 @@ backend/venv/
 backend/__pycache__/
 backend/*.pyc
 backend/.env
-backend/models/*.pkl
-backend/models/*.joblib
+
 
 # Frontend
 frontend/node_modules/
