@@ -5,7 +5,7 @@ import PredictionResult from './components/PredictionResult';
 import MapView from './components/MapView';
 import './App.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = "https://san-francisco-rent-and-roi-predictor-production.up.railway.app";
 
 function App() {
   const [prediction, setPrediction] = useState(null);
@@ -32,7 +32,7 @@ function App() {
     setLoading(true);
     setError(null);
     setPrediction(null);
-    
+
     try {
       console.log('Sending data:', formData); // Debug log
       const response = await axios.post(`${API_BASE_URL}/predict`, formData);
@@ -59,12 +59,12 @@ function App() {
           <div className="content-grid">
             <div className="form-section">
               <h2>Property Details</h2>
-              <PropertyForm 
-                onSubmit={handleSubmit} 
+              <PropertyForm
+                onSubmit={handleSubmit}
                 loading={loading}
                 initialData={propertyData}
               />
-              
+
               {error && (
                 <div className="error-message">
                   <p>{error}</p>
@@ -74,7 +74,7 @@ function App() {
 
             <div className="map-section">
               <h2>Select Location</h2>
-              <MapView 
+              <MapView
                 onLocationSelect={handleLocationSelect}
                 currentLocation={{
                   lat: propertyData.latitude,
