@@ -2,6 +2,7 @@
 Flask API using your ACTUAL trained Gradient Boosting model
 """
 
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
@@ -242,5 +243,6 @@ if __name__ == '__main__':
         print("❌ Model not loaded - check the models/ directory")
     print("🌐 API available at: http://localhost:8000")
     print("=" * 60)
-    
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    port = int(os.environ.get('PORT', 8000))
+    # CRITICAL: Host must be '0.0.0.0' for Railway to route traffic
+    app.run(host='0.0.0.0', port=port)
