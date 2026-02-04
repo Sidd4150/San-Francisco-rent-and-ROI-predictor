@@ -19,7 +19,7 @@ body {
 }
 
 .App-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(100deg, rgb(170, 0, 0) 0%, rgb(173, 153, 93) 100%);
   color: white;
   padding: 2rem;
   text-align: center;
@@ -61,14 +61,16 @@ body {
   }
 }
 
-.form-section, .map-section {
+.form-section,
+.map-section {
   background: white;
   padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.form-section h2, .map-section h2 {
+.form-section h2,
+.map-section h2 {
   margin-top: 0;
   color: #333;
   font-size: 1.5rem;
@@ -107,7 +109,7 @@ body {
 }
 
 .submit-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, rgb(170, 0, 0) 0%, rgb(173, 153, 93) 100%);
   color: white;
   border: none;
   padding: 1rem 2rem;
@@ -135,9 +137,17 @@ body {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 /* Map Styles */
@@ -550,38 +560,44 @@ body {
   margin: 2rem 0;
 }
 
-.income-section, .expense-section {
+.income-section,
+.expense-section {
   background: white;
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.income-section h4, .expense-section h4 {
+.income-section h4,
+.expense-section h4 {
   margin-top: 0;
   color: #333;
   font-size: 1.2rem;
   margin-bottom: 1rem;
 }
 
-.income-section ul, .expense-section ul {
+.income-section ul,
+.expense-section ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.income-section li, .expense-section li {
+.income-section li,
+.expense-section li {
   display: flex;
   justify-content: space-between;
   padding: 0.75rem 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.income-section li:last-child, .expense-section li:last-child {
+.income-section li:last-child,
+.expense-section li:last-child {
   border-bottom: none;
 }
 
-.income-section .total, .expense-section .total {
+.income-section .total,
+.expense-section .total {
   display: flex;
   justify-content: space-between;
   font-weight: 700;
