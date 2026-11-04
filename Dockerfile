@@ -11,6 +11,8 @@ WORKDIR /app
 COPY rent-prediction-app/backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY rent-prediction-app/backend/real_model_api.py ./backend/real_model_api.py
+COPY rent-prediction-app/backend/rental_features.py ./backend/rental_features.py
 COPY rent-prediction-app/backend/models/ ./backend/models/
+COPY rent-prediction-app/backend/data/market_context.json ./backend/data/market_context.json
 COPY --from=frontend /frontend/build ./frontend/build
 CMD ["sh", "-c", "exec gunicorn --chdir /app/backend --bind 0.0.0.0:${PORT:-8000} --workers 1 --threads 4 --timeout 60 --access-logfile - --error-logfile - real_model_api:app"]

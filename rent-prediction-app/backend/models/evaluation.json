@@ -1,0 +1,220 @@
+{
+  "version": "recent-tenancies-v1",
+  "trained_at": "2026-11-04T20:35:20.921508+00:00",
+  "model": "hist_gradient_boosting",
+  "target": "Reported monthly rent band midpoint for recent tenancies",
+  "data": {
+    "source": "San Francisco Rent Board Housing Inventory",
+    "source_url": "https://data.sf.gov/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn",
+    "download_url": "https://data.sf.gov/resource/gdc7-dmcn.json",
+    "query": "submission_year = '2026' AND occupancy_type = 'Occupied by non-owner' AND occupancy_or_vacancy_date_year in ('2025','2026')",
+    "license": "Open Data Commons Public Domain Dedication and License",
+    "retrieved_at": "2026-11-04T20:30:09.199594+00:00",
+    "data_as_of": "2026-11-04T01:31:25.000",
+    "raw_rows": 23141,
+    "usable_rows": 20271,
+    "excluded": {
+      "unknown_open_ended_or_small_floor_area": 2058,
+      "zero_unknown_or_open_ended_rent": 624,
+      "shared_or_unknown_bathroom": 74,
+      "missing_or_future_tenancy_date": 112,
+      "missing_geography": 2
+    },
+    "sha256": "ae8bf8faf92704bb3a373b9d5bdf4dc2f50a2dee3e21492786018be206ff6e5f",
+    "tenancy_year_counts": {
+      "2025": 17872,
+      "2026": 2399
+    },
+    "block_count": 2159,
+    "limitations": [
+      "Owner-reported occupied rents, including possible subsidized tenancies; not advertised asking rents.",
+      "Rents and areas use closed $250 and 250-sq-ft band midpoints.",
+      "No-rent, open-ended $7000+ rent, shared-bathroom and unsupported floor-area records are excluded.",
+      "Coordinates are anonymized block locations. Bedrooms 5+ and bathrooms 3+ are capped at those values."
+    ]
+  },
+  "features": [
+    "beds",
+    "baths",
+    "footage",
+    "latitude",
+    "longitude",
+    "yearBuilt",
+    "buildingUnits",
+    "waterIncluded",
+    "gasIncluded",
+    "electricityIncluded",
+    "refuseIncluded",
+    "buildingAge",
+    "logBuildingUnits",
+    "sqftPerBedroom",
+    "distanceDowntownKm",
+    "distanceParkKm",
+    "neighborhood"
+  ],
+  "validation_candidates": {
+    "hist_gradient_boosting": {
+      "mae": 476.54,
+      "unknown_optional_mae": 499.78,
+      "selection_score": 488.16301582352355
+    },
+    "gradient_boosting": {
+      "mae": 487.69,
+      "unknown_optional_mae": 500.53,
+      "selection_score": 494.11066050009174
+    },
+    "extra_trees": {
+      "mae": 490.31,
+      "unknown_optional_mae": 505.25,
+      "selection_score": 497.78304154201385
+    }
+  },
+  "baseline_validation_mae": {
+    "hist_gradient_boosting": 488.62623494639985,
+    "gradient_boosting": 518.1029859969265,
+    "extra_trees": 476.611279187348
+  },
+  "split": {
+    "method": "Disjoint city blocks; train/validation/calibration use 2025 tenancies; final test uses 2026 tenancies in unseen blocks.",
+    "seed": 42,
+    "counts": {
+      "fit": {
+        "rows": 8682,
+        "blocks": 1036
+      },
+      "validation": {
+        "rows": 2439,
+        "blocks": 259
+      },
+      "calibration": {
+        "rows": 3208,
+        "blocks": 324
+      },
+      "test_2026": {
+        "rows": 433,
+        "blocks": 180
+      }
+    },
+    "final_fit_rows": 11121,
+    "final_fit_blocks": 1295,
+    "unused_2026_development_rows": 1966,
+    "block_overlap": 0
+  },
+  "test": {
+    "mae": 572.32,
+    "rmse": 838.99,
+    "r2": 0.5522,
+    "median_absolute_error": 400.09,
+    "within_500_pct": 60.05,
+    "n": 433,
+    "interval_coverage_pct": 72.06
+  },
+  "five_feature_baseline": {
+    "model": "extra_trees",
+    "mae": 624.93,
+    "rmse": 878.36,
+    "r2": 0.5092,
+    "median_absolute_error": 458.87,
+    "within_500_pct": 54.73,
+    "n": 433
+  },
+  "median_baseline": {
+    "mae": 993.07,
+    "rmse": 1288.38,
+    "r2": -0.056,
+    "median_absolute_error": 750.0,
+    "within_500_pct": 41.57,
+    "n": 433
+  },
+  "unknown_optional_test": {
+    "mae": 585.68,
+    "rmse": 848.75,
+    "r2": 0.5417,
+    "median_absolute_error": 441.94,
+    "within_500_pct": 56.35,
+    "n": 433,
+    "interval_coverage_pct": 74.83
+  },
+  "historical_unseen_block_test": {
+    "mae": 455.71,
+    "rmse": 654.54,
+    "r2": 0.6949,
+    "median_absolute_error": 328.86,
+    "within_500_pct": 67.99,
+    "n": 3543
+  },
+  "improvement_over_five_features_pct": 8.42,
+  "by_bedroom": {
+    "0": {
+      "mae": 373.68,
+      "rmse": 526.06,
+      "r2": 0.2946,
+      "median_absolute_error": 258.74,
+      "within_500_pct": 74.11,
+      "n": 112
+    },
+    "1": {
+      "mae": 529.98,
+      "rmse": 737.12,
+      "r2": 0.2442,
+      "median_absolute_error": 389.56,
+      "within_500_pct": 62.22,
+      "n": 180
+    },
+    "2": {
+      "mae": 674.66,
+      "rmse": 880.76,
+      "r2": 0.439,
+      "median_absolute_error": 530.05,
+      "within_500_pct": 49.11,
+      "n": 112
+    },
+    "3": {
+      "mae": 783.3,
+      "rmse": 947.9,
+      "r2": 0.2263,
+      "median_absolute_error": 668.44,
+      "within_500_pct": 40.91,
+      "n": 22
+    }
+  },
+  "interval": {
+    "nominal_coverage": 0.8,
+    "radius": 718.47,
+    "unknown_optional_radius": 746.66,
+    "method": "Split-conformal absolute residual quantile, using the reserved 2025 calibration blocks.",
+    "limitation": "Nominal coverage assumes exchangeability; temporal drift and source bias can reduce coverage."
+  },
+  "feature_support": {
+    "beds": {
+      "min": 0.0,
+      "max": 5.0
+    },
+    "baths": {
+      "min": 1.0,
+      "max": 3.0
+    },
+    "footage": {
+      "min": 375.5,
+      "max": 3875.5
+    },
+    "latitude": {
+      "min": 37.70879831,
+      "max": 37.80700883
+    },
+    "longitude": {
+      "min": -122.51017197,
+      "max": -122.36805873
+    }
+  },
+  "limitations": [
+    "Owner-reported occupied rents, including possible subsidized tenancies; not advertised asking rents.",
+    "Rents and areas use closed $250 and 250-sq-ft band midpoints.",
+    "No-rent, open-ended $7000+ rent, shared-bathroom and unsupported floor-area records are excluded.",
+    "Coordinates are anonymized block locations. Bedrooms 5+ and bathrooms 3+ are capped at those values.",
+    "Unverified owner reports can contain errors. Subsidy status is unavailable.",
+    "2026 test errors are measured against band midpoints, not exact lease rents.",
+    "The legacy model has unknown training provenance, so it is not treated as a clean held-out baseline.",
+    "Neighborhood is inferred from the nearest published block location, not an exact parcel lookup."
+  ]
+}

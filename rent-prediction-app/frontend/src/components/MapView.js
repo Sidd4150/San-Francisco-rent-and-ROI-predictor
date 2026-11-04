@@ -14,13 +14,17 @@ const MapView = ({ onLocationSelect, currentLocation }) => {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const initialLocation = useRef(currentLocation);
+  const locationSelect = useRef(onLocationSelect);
+
+  useEffect(() => { locationSelect.current = onLocationSelect; }, [onLocationSelect]);
 
   useEffect(() => {
     if (!mapRef.current) return;
 
     // Initialize map
     const map = L.map(mapRef.current).setView(
-      [currentLocation.lat, currentLocation.lng],
+      [initialLocation.current.lat, initialLocation.current.lng],
       13
     );
 
@@ -33,21 +37,21 @@ const MapView = ({ onLocationSelect, currentLocation }) => {
     }).addTo(map);
 
     // Add marker
-    markerRef.current = L.marker([currentLocation.lat, currentLocation.lng], {
+    markerRef.current = L.marker([initialLocation.current.lat, initialLocation.current.lng], {
       draggable: true,
     }).addTo(map);
 
     // Handle marker drag
     markerRef.current.on('dragend', (e) => {
       const { lat, lng } = e.target.getLatLng();
-      onLocationSelect(lat, lng);
+      locationSelect.current(lat, lng);
     });
 
     // Handle map click
     map.on('click', (e) => {
       const { lat, lng } = e.latlng;
       markerRef.current.setLatLng([lat, lng]);
-      onLocationSelect(lat, lng);
+      locationSelect.current(lat, lng);
     });
 
     // Cleanup

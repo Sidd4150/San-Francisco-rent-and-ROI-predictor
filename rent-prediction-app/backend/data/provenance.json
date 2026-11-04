@@ -1,0 +1,30 @@
+{
+  "source": "San Francisco Rent Board Housing Inventory",
+  "source_url": "https://data.sf.gov/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn",
+  "download_url": "https://data.sf.gov/resource/gdc7-dmcn.json",
+  "query": "submission_year = '2026' AND occupancy_type = 'Occupied by non-owner' AND occupancy_or_vacancy_date_year in ('2025','2026')",
+  "license": "Open Data Commons Public Domain Dedication and License",
+  "retrieved_at": "2026-11-04T20:30:09.199594+00:00",
+  "data_as_of": "2026-11-04T01:31:25.000",
+  "raw_rows": 23141,
+  "usable_rows": 20271,
+  "excluded": {
+    "unknown_open_ended_or_small_floor_area": 2058,
+    "zero_unknown_or_open_ended_rent": 624,
+    "shared_or_unknown_bathroom": 74,
+    "missing_or_future_tenancy_date": 112,
+    "missing_geography": 2
+  },
+  "sha256": "ae8bf8faf92704bb3a373b9d5bdf4dc2f50a2dee3e21492786018be206ff6e5f",
+  "tenancy_year_counts": {
+    "2025": 17872,
+    "2026": 2399
+  },
+  "block_count": 2159,
+  "limitations": [
+    "Owner-reported occupied rents, including possible subsidized tenancies; not advertised asking rents.",
+    "Rents and areas use closed $250 and 250-sq-ft band midpoints.",
+    "No-rent, open-ended $7000+ rent, shared-bathroom and unsupported floor-area records are excluded.",
+    "Coordinates are anonymized block locations. Bedrooms 5+ and bathrooms 3+ are capped at those values."
+  ]
+}

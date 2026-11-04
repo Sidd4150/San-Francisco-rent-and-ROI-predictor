@@ -1,33 +1,19 @@
-# SF Rent Prediction Backend
+# Rent prediction backend
 
-## Setup
+This service runs Flask, not the legacy FastAPI entry point.
 
-1. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
-```bash
+```sh
 pip install -r requirements.txt
+python real_model_api.py
 ```
 
-3. Train the model (or use existing model):
-```bash
-python train_model.py
-```
+Production entry point: `gunicorn real_model_api:app`, bound to Railway's `PORT`.
+The evaluated artifact is `models/rental_model.joblib`. Keep `rental_features.py`
+and `data/market_context.json` alongside the service. `/model-info` publishes the
+model's measured performance and source limitations.
 
-4. Run the FastAPI server:
-```bash
-uvicorn main:app --reload
-```
-
-The API will be available at http://localhost:8000
-API documentation at http://localhost:8000/docs
-
-## API Endpoints
-
-- `POST /predict` - Predict rent for a property
-- `GET /health` - Check API health
-- `GET /docs` - Interactive API documentation
+Run `python train_model.py` to reproduce training on the included data snapshot.
+Run `python prepare_data.py` to refresh the documented official data cohort first.
+Neither command uses synthetic training data. `train_model_simple.py`, `main.py`
+and `simple_api.py` are legacy demonstration code and are not production entry
+points. See the [root README](../../README.md) for evaluation design and setup.

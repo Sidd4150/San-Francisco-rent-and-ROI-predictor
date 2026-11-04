@@ -1,266 +1,174 @@
-"""
-Flask API using your ACTUAL trained Gradient Boosting model
-"""
-
+"""Serve the evaluated recent-tenancy model and its data provenance."""
+import json
+import math
 import os
-from flask import Flask, request, jsonify, send_from_directory
+from pathlib import Path
+
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import joblib
-import numpy as np
-from pathlib import Path
 import requests
-from urllib.parse import quote
+from threadpoolctl import threadpool_limits
+
+from rental_features import LIMITS, OPTIONAL_FEATURES, feature_frame, nearest_neighborhood, validate_property
 
 BASE_DIR = Path(__file__).resolve().parent
-FRONTEND_BUILD = BASE_DIR.parent / "frontend" / "build"
-app = Flask(__name__, static_folder=str(FRONTEND_BUILD / "static"))
-CORS(app)  # Enable CORS for all routes
-
-# Load your REAL trained model
-MODEL_PATH = BASE_DIR / "models" / "gradient_boosting_model.pkl"
+FRONTEND_BUILD = BASE_DIR.parent / 'frontend' / 'build'
+app = Flask(__name__, static_folder=str(FRONTEND_BUILD / 'static'))
+CORS(app)
+MODEL_PATH = BASE_DIR / 'models' / 'rental_model.joblib'
 try:
-    model = joblib.load(MODEL_PATH)
-    print("🎯 SUCCESS: Your ACTUAL trained Gradient Boosting model loaded!")
-    print(f"Model type: {type(model)}")
-    
-    # Print model details to confirm it's YOUR model
-    if hasattr(model, 'n_estimators'):
-        print(f"✅ Model parameters:")
-        print(f"   - n_estimators: {model.n_estimators}")
-        print(f"   - learning_rate: {model.learning_rate}")
-        print(f"   - max_depth: {model.max_depth}")
-        print(f"   - Feature importances: {model.feature_importances_}")
-    
+    bundle = joblib.load(MODEL_PATH)
+    model = bundle['pipeline']
+    report = bundle['report']
     model_loaded = True
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    model = None
-    model_loaded = False
+    app.logger.info('Loaded evaluated model %s', report['version'])
+except Exception:
+    app.logger.exception('Unable to load rental model')
+    bundle, model, report, model_loaded = None, None, None, False
+try:
+    market_context = json.loads((BASE_DIR / 'data' / 'market_context.json').read_text())
+except (OSError, ValueError):
+    market_context = None
 
-@app.route('/')
+
+def model_summary():
+    return dict(version=report['version'], type=report['model'], target=report['target'],
+                source=report['data']['source'], source_url=report['data']['source_url'],
+                data_as_of=report['data']['data_as_of'], usable_records=report['data']['usable_rows'],
+                validation=report['test'], five_feature_baseline=report['five_feature_baseline'],
+                improvement_over_five_features_pct=report['improvement_over_five_features_pct'],
+                features=report['features'], limitations=report['limitations'])
+
+
+@app.get('/')
 def home():
-    if (FRONTEND_BUILD / "index.html").is_file():
-        return send_from_directory(FRONTEND_BUILD, "index.html")
-    return jsonify({
-        "message": "Welcome to SF Rent Prediction API",
-        "model_status": "REAL Gradient Boosting Model (81.2% accuracy)" if model_loaded else "Model not loaded",
-        "endpoints": {
-            "/predict": "POST - Predict rent for a property",
-            "/health": "GET - Health check"
-        }
-    })
+    if (FRONTEND_BUILD / 'index.html').is_file():
+        return send_from_directory(FRONTEND_BUILD, 'index.html')
+    return jsonify(message='San Francisco recent-tenancy rent prediction API', model_loaded=model_loaded,
+                   endpoints=['/health', '/model-info', '/predict', '/geocode'])
 
-@app.route('/<path:filename>')
+
+@app.get('/<path:filename>')
 def frontend_asset(filename):
     return send_from_directory(FRONTEND_BUILD, filename)
 
-@app.route('/geocode', methods=['POST'])
-def geocode_address():
-    """Convert address to latitude/longitude coordinates."""
-    try:
-        data = request.get_json(silent=True)
-        if not isinstance(data, dict):
-            return jsonify({"error": "Request body must be a JSON object"}), 400
-        address = data.get('address', '')
-        if not isinstance(address, str):
-            return jsonify({"error": "Address must be a string"}), 400
-        address = address.strip()
-        
-        if not address:
-            return jsonify({"error": "Address is required"}), 400
-        
-        # Add "San Francisco, CA" if not already in address
-        if "san francisco" not in address.lower():
-            address = f"{address}, San Francisco, CA"
-        
-        # Use Nominatim (free OpenStreetMap geocoding)
-        encoded_address = quote(address)
-        url = f"https://nominatim.openstreetmap.org/search?q={encoded_address}&format=json&limit=1"
-        
-        # Add user agent header (required by Nominatim)
-        headers = {'User-Agent': 'SF-Rent-Predictor/1.0'}
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            results = response.json()
-            if results:
-                location = results[0]
-                lat = float(location['lat'])
-                lon = float(location['lon'])
-                
-                # Verify it's within SF bounds
-                if 37.6 <= lat <= 37.9 and -122.6 <= lon <= -122.3:
-                    return jsonify({
-                        "latitude": lat,
-                        "longitude": lon,
-                        "display_name": location.get('display_name', address),
-                        "success": True
-                    })
-                else:
-                    return jsonify({
-                        "error": "Address is outside San Francisco bounds",
-                        "success": False
-                    }), 400
-            else:
-                return jsonify({
-                    "error": "Address not found",
-                    "success": False
-                }), 404
-        else:
-            return jsonify({
-                "error": "Geocoding service error",
-                "success": False
-            }), 500
-            
-    except Exception as e:
-        return jsonify({
-            "error": f"Geocoding error: {str(e)}",
-            "success": False
-        }), 500
 
-@app.route('/health')
+@app.get('/health')
 def health():
-    model_details = {}
-    if model_loaded and hasattr(model, 'n_estimators'):
-        model_details = {
-            "n_estimators": model.n_estimators,
-            "learning_rate": model.learning_rate,
-            "max_depth": model.max_depth,
-            "n_features": model.n_features_in_,
-            "feature_importances": model.feature_importances_.tolist()
-        }
-    
-    return jsonify({
-        "status": "healthy" if model_loaded else "unhealthy",
-        "model_loaded": model_loaded,
-        "model_type": "REAL Gradient Boosting Model (81.2% accuracy)" if model_loaded else "No model loaded",
-        "model_parameters": model_details
-    }), 200 if model_loaded else 503
+    return jsonify(status='healthy' if model_loaded else 'unhealthy', model_loaded=model_loaded,
+                   model_version=report['version'] if report else None), 200 if model_loaded else 503
 
-@app.route('/predict', methods=['POST'])
+
+@app.get('/model-info')
+def model_info():
+    if not model_loaded:
+        return jsonify(error='Model unavailable'), 503
+    return jsonify(**report, market_context=market_context)
+
+
+def json_object():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        raise ValueError('Request body must be a JSON object')
+    return data
+
+
+@app.post('/geocode')
+def geocode_address():
+    try:
+        address = json_object().get('address')
+        if not isinstance(address, str) or not address.strip():
+            raise ValueError('A street address is required')
+        address = address.strip()
+        if 'san francisco' not in address.lower():
+            address += ', San Francisco, CA'
+        response = requests.get('https://nominatim.openstreetmap.org/search',
+                                params={'q': address, 'format': 'json', 'limit': 1},
+                                headers={'User-Agent': 'SF-Rent-Predictor/2.0'}, timeout=10)
+        response.raise_for_status()
+        results = response.json()
+        if not results:
+            return jsonify(error='Address not found', success=False), 404
+        location = results[0]
+        latitude, longitude = float(location['lat']), float(location['lon'])
+        if not (37.70 <= latitude <= 37.84 and -122.52 <= longitude <= -122.35):
+            raise ValueError('Address is outside the supported San Francisco area')
+        return jsonify(latitude=latitude, longitude=longitude,
+                       display_name=location.get('display_name', address), success=True)
+    except ValueError as error:
+        return jsonify(error=str(error), success=False), 400
+    except requests.Timeout:
+        return jsonify(error='Address lookup timed out. Please try again.', success=False), 504
+    except requests.RequestException:
+        return jsonify(error='Address lookup is temporarily unavailable.', success=False), 502
+
+
+def investment_inputs(data):
+    specs = {'downPaymentPercent': (20, 0, 100), 'interestRate': (7, 0, 30),
+             'loanTermYears': (30, 1, 50), 'propertyTaxRate': (1.25, 0, 10),
+             'insuranceMonthly': (200, 0, 100000), 'utilitiesMonthly': (150, 0, 100000),
+             'maintenancePercent': (1, 0, 100), 'propertyManagementPercent': (8, 0, 100),
+             'vacancyRate': (5, 0, 100), 'hoaMonthly': (0, 0, 100000)}
+    values = {}
+    for field, (default, low, high) in specs.items():
+        value = data.get(field)
+        value = default if value in (None, '') else float(value)
+        if not math.isfinite(value) or not low <= value <= high:
+            raise ValueError(f'{field} must be between {low} and {high}')
+        values[field] = value
+    purchase_price = data.get('purchasePrice')
+    if purchase_price not in (None, ''):
+        purchase_price = float(purchase_price)
+        if not math.isfinite(purchase_price) or purchase_price <= 0:
+            raise ValueError('purchasePrice must be a positive number')
+    else:
+        purchase_price = None
+    return dict(purchasePrice=purchase_price, **values)
+
+
+@app.post('/predict')
 def predict():
     try:
-        # Get JSON data from request
-        data = request.get_json(silent=True)
-        if not isinstance(data, dict):
-            return jsonify({"error": "Request body must be a JSON object"}), 400
-        
-        # Debug log the entire request payload
-        print("\n🔍 DEBUG: Full request payload:")
-        print(data)
-        
-        # Validate required fields
-        required_fields = ['beds', 'baths', 'footage', 'latitude', 'longitude']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    "error": f"Missing required field: {field}"
-                }), 400
-        
-        # Extract and validate features
-        beds = float(data['beds'])
-        baths = float(data['baths'])
-        footage = float(data['footage'])
-        latitude = float(data['latitude'])
-        longitude = float(data['longitude'])
-        
-        # Optional investment analysis fields
-        purchase_price = data.get('purchasePrice', None)
-        if purchase_price and purchase_price != '':
-            purchase_price = float(purchase_price)
-        else:
-            purchase_price = None
-        
-        # Investment analysis parameters (optional) - convert to float and provide defaults
-        investment_params = {
-            'downPaymentPercent': float(data.get('downPaymentPercent', 20)),
-            'interestRate': float(data.get('interestRate', 7.0)),
-            'loanTermYears': int(data.get('loanTermYears', 30)),
-            'propertyTaxRate': float(data.get('propertyTaxRate', 1.25)),
-            'insuranceMonthly': float(data.get('insuranceMonthly', 200)),
-            'utilitiesMonthly': float(data.get('utilitiesMonthly', 150)),
-            'maintenancePercent': float(data.get('maintenancePercent', 1)),
-            'propertyManagementPercent': float(data.get('propertyManagementPercent', 8)),
-            'vacancyRate': float(data.get('vacancyRate', 5))
-        }
-        
-        # Debug logging for investment parameters
-        print("📊 DEBUG: Received investment parameters:")
-        print(f"   - Purchase Price: {purchase_price}")
-        for key, value in investment_params.items():
-            print(f"   - {key}: {value}")
-        
-        # Validate ranges
-        if not (0 <= beds <= 10):
-            return jsonify({"error": "Beds must be between 0 and 10"}), 400
-        if not (0.5 <= baths <= 10):
-            return jsonify({"error": "Baths must be between 0.5 and 10"}), 400
-        if not (250 <= footage <= 10000):
-            return jsonify({"error": "Footage must be between 250 and 10000"}), 400
-        if not (37.6 <= latitude <= 37.9):
-            return jsonify({"error": "Latitude must be between 37.6 and 37.9"}), 400
-        if not (-122.6 <= longitude <= -122.3):
-            return jsonify({"error": "Longitude must be between -122.6 and -122.3"}), 400
-        
-        # Check if model is loaded
+        data = json_object()
+        features = validate_property(data)
+        investment = investment_inputs(data)
         if not model_loaded:
-            return jsonify({
-                "error": "Model not loaded. Please check server logs."
-            }), 503
-        
-        # Prepare features for YOUR model (order: Beds, Baths, Footage, Latitude, Longitude)
-        feature_array = np.array([[beds, baths, footage, latitude, longitude]])
-        
-        # Make prediction using YOUR ACTUAL TRAINED MODEL
-        predicted_rent = model.predict(feature_array)[0]
-        
-        # Build input features dictionary
-        input_features = {
-            "beds": beds,
-            "baths": baths,
-            "footage": footage,
-            "latitude": latitude,
-            "longitude": longitude,
-            "purchasePrice": purchase_price
-        }
-        
-        # Add investment parameters if provided
-        if purchase_price:
-            input_features.update(investment_params)
-        
-        # Return response
-        return jsonify({
-            "estimated_rent": round(predicted_rent, 2),
-            "input_features": input_features,
-            "model_info": {
-                "type": "Gradient Boosting Regressor",
-                "accuracy": "81.2%",
-                "trained_on": "SF Rental Data",
-                "features": ["Beds", "Baths", "Footage", "Latitude", "Longitude"]
-            }
-        })
-        
-    except (TypeError, ValueError, OverflowError):
-        return jsonify({"error": "Property and investment fields must contain valid numbers"}), 400
-    except Exception as e:
-        app.logger.exception("Prediction failed")
-        return jsonify({
-            "error": "Prediction failed. Please try again."
-        }), 500
+            return jsonify(error='Prediction model is unavailable. Please try again later.'), 503
+        neighborhood, distance = nearest_neighborhood(features['latitude'], features['longitude'], bundle['locations'])
+        features['neighborhood'] = neighborhood
+        with threadpool_limits(limits=1):
+            estimated_rent = float(model.predict(feature_frame([features]))[0])
+        if not math.isfinite(estimated_rent):
+            raise RuntimeError('Model returned a non-finite result')
+        unknown = [field for field in OPTIONAL_FEATURES if features[field] is None]
+        radius = bundle['unknown_optional_radius'] if unknown else bundle['calibration_radius']
+        warnings = []
+        if unknown:
+            warnings.append('Some building or utility details are unknown; the range uses the more conservative calibration for missing details.')
+        if features['footage'] > 2500 or features['beds'] >= 4:
+            warnings.append('Large homes have fewer examples. Luxury rents of $7,000 or more are excluded from this dataset.')
+        if distance > .75:
+            warnings.append('This location is far from a published inventory point; the inferred neighborhood may be less reliable.')
+        if features['beds'] == 5 or features['baths'] == 3:
+            warnings.append('The public data groups 5+ bedrooms and 3+ bathrooms together.')
+        return jsonify(estimated_rent=round(estimated_rent, 2),
+                       input_features=dict(**features, **investment),
+                       prediction_interval=dict(lower=round(max(0, estimated_rent - radius), 2),
+                                                upper=round(estimated_rent + radius, 2),
+                                                nominal_coverage=.8,
+                                                observed_test_coverage_pct=report['unknown_optional_test' if unknown else 'test']['interval_coverage_pct'],
+                                                unknown_details=bool(unknown),
+                                                note='Calibrated on 2025 reported rents; not a guarantee for future or advertised rents.'),
+                       model_info=model_summary(), warnings=warnings,
+                       market_context=dict(latest=market_context['latest'], source_url=market_context['source_url'],
+                                           attribution=market_context['attribution'], note=market_context['note']) if market_context else None)
+    except (ValueError, TypeError, OverflowError) as error:
+        return jsonify(error=str(error) or 'Please supply valid numeric property details'), 400
+    except Exception:
+        app.logger.exception('Prediction failed')
+        return jsonify(error='Prediction failed. Please try again later.'), 500
+
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("🏠 SF RENT PREDICTION API - REAL MODEL VERSION")
-    print("=" * 60)
-    if model_loaded:
-        print("✅ Using your ACTUAL trained Gradient Boosting model!")
-        print("🎯 81.2% accuracy on test data")
-        print("📊 Trained on San Francisco rental listings")
-        print("🚀 Ready for real predictions!")
-    else:
-        print("❌ Model not loaded - check the models/ directory")
-    print("🌐 API available at: http://localhost:8000")
-    print("=" * 60)
-    port = int(os.environ.get('PORT', 8000))
-    # CRITICAL: Host must be '0.0.0.0' for Railway to route traffic
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))

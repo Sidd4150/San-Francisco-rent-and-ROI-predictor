@@ -7,7 +7,7 @@ const PredictionResult = ({ prediction }) => {
     return <p role="alert">Unable to display this prediction. Please try again.</p>;
   }
 
-  const { estimated_rent, input_features } = prediction;
+  const { estimated_rent, input_features, prediction_interval, model_info, market_context, warnings = [] } = prediction;
   
   // Calculate ROI metrics if purchase price is provided
   const purchasePrice = input_features.purchasePrice ? parseFloat(input_features.purchasePrice) : null;
@@ -26,6 +26,7 @@ const PredictionResult = ({ prediction }) => {
     const propertyTaxRate = input_features.propertyTaxRate ?? 1.25;
     const insuranceMonthly = input_features.insuranceMonthly ?? 0;
     const utilitiesMonthly = input_features.utilitiesMonthly ?? 0;
+    const hoaMonthly = input_features.hoaMonthly ?? 0;
     const maintenancePercent = input_features.maintenancePercent ?? 0;
     const propertyManagementPercent = input_features.propertyManagementPercent ?? 0;
     const vacancyRate = input_features.vacancyRate ?? 0;
@@ -56,7 +57,7 @@ const PredictionResult = ({ prediction }) => {
     
     // Total monthly expenses
     const totalMonthlyExpenses = monthlyMortgage + propertyTax + insurance + 
-                                 utilities + maintenance + propertyManagement + vacancyLoss;
+                                 utilities + hoaMonthly + maintenance + propertyManagement + vacancyLoss;
     
     // Net monthly cash flow
     const netMonthlyCashFlow = monthlyRent - totalMonthlyExpenses;
@@ -76,6 +77,7 @@ const PredictionResult = ({ prediction }) => {
       propertyTaxRate,
       insurance,
       utilities,
+      hoaMonthly,
       maintenance,
       maintenancePercent,
       propertyManagement,
@@ -86,7 +88,13 @@ const PredictionResult = ({ prediction }) => {
       netMonthlyCashFlow,
       annualCashFlow,
       cashOnCashReturn,
-      isGoodInvestment: netMonthlyCashFlow > 0
+      isGoodInvestment: netMonthlyCashFlow > 0,
+      cashFlowAtRent: rent => rent * (1 - (maintenancePercent + propertyManagementPercent + vacancyRate) / 100) -
+        (monthlyMortgage + propertyTax + insurance + utilities + hoaMonthly),
+      breakEvenRent: (maintenancePercent + propertyManagementPercent + vacancyRate) < 100
+        ? (monthlyMortgage + propertyTax + insurance + utilities + hoaMonthly) /
+          (1 - (maintenancePercent + propertyManagementPercent + vacancyRate) / 100)
+        : null
     };
   }
 
@@ -107,8 +115,42 @@ const PredictionResult = ({ prediction }) => {
         <div className="estimated-rent">
           <h3>Estimated Monthly Rent</h3>
           <div className="rent-amount">{formatCurrency(estimated_rent)}</div>
+          <p>Recent-tenancy benchmark · reported rent bands</p>
         </div>
+        {prediction_interval && (
+          <div className="confidence-range">
+            <h4>Calibration range</h4>
+            <div className="range">{formatCurrency(prediction_interval.lower)}–{formatCurrency(prediction_interval.upper)}</div>
+            <p>The {prediction_interval.unknown_details ? 'unknown-details' : 'standard'} range contained {prediction_interval.observed_test_coverage_pct}% of
+              reported rent midpoints in the 2026 test set. Partially missing inputs may behave differently.</p>
+            <small>{prediction_interval.note}</small>
+          </div>
+        )}
       </div>
+
+      {warnings.length > 0 && <aside className="prediction-warnings"><ul>{warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></aside>}
+
+      {model_info?.validation && (
+        <details className="model-evidence">
+          <summary>Data quality &amp; measured model performance</summary>
+          <p>Mean absolute error: <strong>{formatCurrency(model_info.validation.mae)}/month</strong> on {model_info.validation.n} tenancies
+            begun in 2026, on city blocks excluded from training. Errors are measured against reported $250 rent-band midpoints.</p>
+          <p>The richer model reduced test error by {model_info.improvement_over_five_features_pct}% compared with a newly trained
+            five-feature baseline ({formatCurrency(model_info.five_feature_baseline.mae)}/month).</p>
+          <p>{model_info.usable_records.toLocaleString()} usable reports · data as of {model_info.data_as_of.slice(0, 10)}.</p>
+          <ul>{model_info.limitations.map(note => <li key={note}>{note}</li>)}</ul>
+          <a href={model_info.source_url} target="_blank" rel="noreferrer">Original San Francisco Rent Board data</a>
+        </details>
+      )}
+
+      {market_context && (
+        <aside className="market-context">
+          <h3>Citywide asking-rent context</h3>
+          <p>Zillow’s San Francisco rent index: <strong>{formatCurrency(market_context.latest.rent)}/month</strong> ({market_context.latest.date.slice(0, 7)}).</p>
+          <p>{market_context.note} Its all-home mix differs from this property and from occupied-rent reports.</p>
+          <a href={market_context.source_url} target="_blank" rel="noreferrer">{market_context.attribution}</a>
+        </aside>
+      )}
 
       {/* ROI Analysis Section */}
       {grossRentalYield && (
@@ -118,7 +160,7 @@ const PredictionResult = ({ prediction }) => {
             <div className="roi-card">
               <h4>Gross Rental Yield</h4>
               <div className="roi-percentage">{grossRentalYield.toFixed(2)}%</div>
-              <p>Annual return on investment</p>
+              <p>Annual gross rent / purchase price</p>
             </div>
             <div className="roi-card">
               <h4>Annual Rental Income</h4>
@@ -136,7 +178,7 @@ const PredictionResult = ({ prediction }) => {
           
           <div className="cash-flow-summary">
             <div className={`investment-decision ${cashFlowAnalysis.isGoodInvestment ? 'positive' : 'negative'}`}>
-              <h2>{cashFlowAnalysis.isGoodInvestment ? '✅ GOOD INVESTMENT' : '❌ POOR INVESTMENT'}</h2>
+              <h2>{cashFlowAnalysis.isGoodInvestment ? 'Positive estimated cash flow' : 'Negative estimated cash flow'}</h2>
               
               <div className="monthly-comparison">
                 <div className="comparison-item">
@@ -157,9 +199,10 @@ const PredictionResult = ({ prediction }) => {
               
               <p className="recommendation">
                 {cashFlowAnalysis.isGoodInvestment 
-                  ? `You'll make ${formatCurrency(cashFlowAnalysis.netMonthlyCashFlow)} profit per month. This property is worth renting out!`
-                  : `You'll lose ${formatCurrency(Math.abs(cashFlowAnalysis.netMonthlyCashFlow))} per month. Not recommended as a rental investment.`}
+                  ? `Estimated surplus of ${formatCurrency(cashFlowAnalysis.netMonthlyCashFlow)} per month under these assumptions.`
+                  : `Estimated shortfall of ${formatCurrency(Math.abs(cashFlowAnalysis.netMonthlyCashFlow))} per month under these assumptions.`}
               </p>
+              <p>Excludes closing costs, major repairs, income taxes and appreciation.</p>
             </div>
           </div>
 
@@ -197,6 +240,7 @@ const PredictionResult = ({ prediction }) => {
                   <span>Utilities</span>
                   <span className="negative">{formatCurrency(cashFlowAnalysis.utilities)}</span>
                 </li>
+                <li><span>HOA dues</span><span className="negative">{formatCurrency(cashFlowAnalysis.hoaMonthly)}</span></li>
                 <li>
                   <span>Maintenance ({cashFlowAnalysis.maintenancePercent}%)</span>
                   <span className="negative">{formatCurrency(cashFlowAnalysis.maintenance)}</span>
@@ -215,6 +259,15 @@ const PredictionResult = ({ prediction }) => {
                 <span className="negative">{formatCurrency(cashFlowAnalysis.totalMonthlyExpenses)}</span>
               </div>
             </div>
+          </div>
+
+          <div className="rent-sensitivity">
+            <h4>How much does rent uncertainty affect cash flow?</h4>
+            {cashFlowAnalysis.breakEvenRent !== null && <p>Break-even monthly rent: <strong>{formatCurrency(cashFlowAnalysis.breakEvenRent)}</strong></p>}
+            {prediction_interval && <>
+              <p>At the lower rent estimate: <strong>{formatCurrency(cashFlowAnalysis.cashFlowAtRent(prediction_interval.lower))}/month</strong></p>
+              <p>At the upper rent estimate: <strong>{formatCurrency(cashFlowAnalysis.cashFlowAtRent(prediction_interval.upper))}/month</strong></p>
+            </>}
           </div>
 
           <div className="roi-metrics advanced">
@@ -258,14 +311,15 @@ const PredictionResult = ({ prediction }) => {
           <li><strong>Bathrooms:</strong> {input_features.baths}</li>
           <li><strong>Square Footage:</strong> {input_features.footage.toLocaleString()} sq ft</li>
           <li><strong>Location:</strong> ({input_features.latitude.toFixed(4)}, {input_features.longitude.toFixed(4)})</li>
+          {input_features.neighborhood && <li><strong>Inferred neighborhood:</strong> {input_features.neighborhood}</li>}
           {purchasePrice && <li><strong>Purchase Price:</strong> {formatCurrency(purchasePrice)}</li>}
         </ul>
       </div>
 
       <div className="additional-info">
         <p className="note">
-          * This prediction is based on machine learning analysis of San Francisco rental data.
-          Actual rents may vary based on additional factors like amenities, condition, and market timing.
+          This estimate reflects owner-reported occupied rents for recent tenancies. It is not a quote for a new listing.
+          Advertised rents, unit condition, parking, laundry, concessions and subsidy status can differ substantially.
         </p>
       </div>
     </div>

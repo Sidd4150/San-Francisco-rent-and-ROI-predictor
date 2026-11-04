@@ -35,12 +35,10 @@ function App() {
     setPrediction(null);
 
     try {
-      console.log('Sending data:', formData); // Debug log
       const response = await api.post('/predict', formData);
       if (!isValidPrediction(response.data)) {
         throw new Error('The prediction service returned an unexpected response. Please try again shortly.');
       }
-      console.log('Received response:', response.data); // Debug log
       setPrediction(response.data);
       setPropertyData(formData);
     } catch (err) {
@@ -55,11 +53,16 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>San Francisco Rent Predictor</h1>
-        <p>Estimate monthly rent based on property features using machine learning</p>
+        <p>Estimate recent-tenancy rents with San Francisco housing data</p>
       </header>
 
       <main className="App-main">
         <div className="container">
+          <aside className="data-banner">
+            <strong>Built on 2026 San Francisco Rent Board reports</strong>
+            <p>Estimates reflect occupied rents for tenancies begun in 2025–2026, including possible subsidized units.
+              They are a benchmark, not an advertised market-rent quote. Rent and floor area are reported in bands.</p>
+          </aside>
           <div className="content-grid">
             <div className="form-section">
               <h2>Property Details</h2>
@@ -67,6 +70,7 @@ function App() {
                 onSubmit={handleSubmit}
                 loading={loading}
                 initialData={propertyData}
+                onLocationChange={handleLocationSelect}
               />
 
               {error && (
@@ -101,7 +105,7 @@ function App() {
       </main>
 
       <footer className="App-footer">
-        <p>Built with React & Flask | ML Model: Gradient Boosting (81.2% accuracy)</p>
+        <p>React &amp; Flask · Measured model performance and data sources are shown with each estimate.</p>
       </footer>
     </div>
   );

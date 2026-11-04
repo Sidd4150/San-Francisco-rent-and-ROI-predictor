@@ -4,5 +4,6 @@ gunicorn==23.0.0
 # Match the version embedded in the serialized model.
 scikit-learn==1.6.1
 numpy==2.2.6
+pandas==2.2.3
 joblib==1.5.2
 requests==2.32.5

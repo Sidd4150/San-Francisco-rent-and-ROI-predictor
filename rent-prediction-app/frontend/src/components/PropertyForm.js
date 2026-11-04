@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 
-const PropertyForm = ({ onSubmit, loading, initialData }) => {
+const PropertyForm = ({ onSubmit, loading, initialData, onLocationChange }) => {
   const [formData, setFormData] = useState({
     beds: 2,
     baths: 1,
@@ -10,6 +10,12 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
     longitude: -122.4194,
     purchasePrice: '',
     address: '',
+    yearBuilt: '',
+    buildingUnits: '',
+    waterIncluded: '',
+    gasIncluded: '',
+    electricityIncluded: '',
+    refuseIncluded: '',
     // Investment analysis fields
     downPaymentPercent: 20,
     interestRate: 7.0,
@@ -19,7 +25,9 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
     utilitiesMonthly: 150,
     maintenancePercent: 1,
     propertyManagementPercent: 8,
-    vacancyRate: 5
+    vacancyRate: 5,
+    hoaMonthly: 0,
+    ...initialData
   });
 
   const [geocoding, setGeocoding] = useState(false);
@@ -27,7 +35,7 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({ ...prev, ...initialData }));
+      setFormData(prev => ({ ...prev, latitude: initialData.latitude, longitude: initialData.longitude }));
     }
   }, [initialData]);
 
@@ -39,13 +47,12 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
     let parsedValue;
     if (textFields.includes(name)) {
       parsedValue = value;
-    } else if (name === 'purchasePrice') {
+    } else if (value === '' || name === 'purchasePrice') {
       parsedValue = value === '' ? '' : parseFloat(value);
     } else {
       parsedValue = parseFloat(value);
     }
     
-    console.log(`📝 DEBUG: Field changed - ${name}:`, parsedValue, 'type:', typeof parsedValue);
     
     setFormData(prev => ({
       ...prev,
@@ -68,6 +75,7 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
       });
 
       if (response.data.success) {
+        onLocationChange?.(response.data.latitude, response.data.longitude);
         setFormData(prev => ({
           ...prev,
           latitude: Math.round(response.data.latitude * 10000) / 10000,
@@ -84,13 +92,6 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('🚀 DEBUG: Form submission data:', formData);
-    console.log('📊 DEBUG: Investment parameters being sent:');
-    console.log('   - downPaymentPercent:', formData.downPaymentPercent, 'type:', typeof formData.downPaymentPercent);
-    console.log('   - interestRate:', formData.interestRate, 'type:', typeof formData.interestRate);
-    console.log('   - loanTermYears:', formData.loanTermYears, 'type:', typeof formData.loanTermYears);
-    console.log('   - propertyTaxRate:', formData.propertyTaxRate, 'type:', typeof formData.propertyTaxRate);
-    console.log('   - insuranceMonthly:', formData.insuranceMonthly, 'type:', typeof formData.insuranceMonthly);
     onSubmit(formData);
   };
 
@@ -106,7 +107,7 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
           value={formData.beds}
           onChange={handleChange}
           min="0"
-          max="10"
+          max="5"
           step="1"
           required
         />
@@ -120,8 +121,8 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
           name="baths"
           value={formData.baths}
           onChange={handleChange}
-          min="0.5"
-          max="10"
+          min="1"
+          max="3"
           step="0.5"
           required
         />
@@ -135,9 +136,9 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
           name="footage"
           value={formData.footage}
           onChange={handleChange}
-          min="250"
-          max="10000"
-          step="10"
+          min="251"
+          max="4000"
+          step="1"
           required
         />
       </div>
@@ -153,7 +154,7 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
             name="address"
             value={formData.address || ''}
             onChange={handleChange}
-            placeholder="e.g., 1600 Amphitheatre Pkwy or Financial District"
+            placeholder="e.g., 1 Market Street"
           />
           <button 
             type="button" 
@@ -180,8 +181,8 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
               name="latitude"
               value={formData.latitude}
               onChange={handleChange}
-              min="37.6"
-              max="37.9"
+              min="37.70"
+              max="37.84"
               step="0.0001"
               required
             />
@@ -195,14 +196,43 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
               name="longitude"
               value={formData.longitude}
               onChange={handleChange}
-              min="-122.6"
-              max="-122.3"
+              min="-122.52"
+              max="-122.35"
               step="0.0001"
               required
             />
           </div>
         </div>
       </div>
+
+      <fieldset className="building-section">
+        <legend>Building &amp; included utilities</legend>
+        <p>These details improve the estimate. Leave anything you do not know blank.</p>
+        <div className="investment-grid">
+          <div className="form-group">
+            <label htmlFor="yearBuilt">Year built</label>
+            <input id="yearBuilt" name="yearBuilt" type="number" min="1800" max="2026" step="1"
+              placeholder="Unknown" value={formData.yearBuilt} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="buildingUnits">Units in building</label>
+            <input id="buildingUnits" name="buildingUnits" type="number" min="1" max="10000" step="1"
+              placeholder="Unknown" value={formData.buildingUnits} onChange={handleChange} />
+          </div>
+          {[
+            ['waterIncluded', 'Water / sewer included'], ['gasIncluded', 'Natural gas included'],
+            ['electricityIncluded', 'Electricity included'], ['refuseIncluded', 'Garbage / recycling included'],
+          ].map(([name, label]) => (
+            <div className="form-group" key={name}>
+              <label htmlFor={name}>{label}</label>
+              <select id={name} name={name} value={formData[name]} onChange={handleChange}>
+                <option value="">Unknown</option><option value="1">Yes</option><option value="0">No</option>
+              </select>
+            </div>
+          ))}
+        </div>
+        <small>Neighborhood and distance features are inferred from location. Bedrooms 5+ and bathrooms 3+ are grouped in the source data.</small>
+      </fieldset>
 
       <div className="investment-section">
         <h3>💰 Investment Analysis (Optional)</h3>
@@ -306,6 +336,12 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
               max="1000"
               step="10"
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="hoaMonthly">HOA dues ($/month)</label>
+            <input id="hoaMonthly" name="hoaMonthly" type="number" min="0" max="100000" step="1"
+              value={formData.hoaMonthly} onChange={handleChange} />
           </div>
 
           <div className="form-group">

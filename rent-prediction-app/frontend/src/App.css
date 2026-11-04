@@ -727,3 +727,27 @@ body {
   font-size: 0.9rem;
   opacity: 0.8;
 }
+.data-banner, .market-context, .model-evidence, .rent-sensitivity, .building-section {
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #dce3ec;
+  border-radius: 8px;
+  background: #f7f9fc;
+  line-height: 1.6;
+}
+.data-banner { background: #fff; border-left: 4px solid #aa0000; }
+.data-banner p, .building-section p { margin-bottom: 0; }
+.building-section { margin: 0; min-width: 0; }
+.building-section legend { font-weight: 700; padding: 0 .5rem; }
+.form-group select { padding: .75rem; border: 2px solid #e1e5eb; border-radius: 4px; font: inherit; background: white; }
+.model-evidence summary { cursor: pointer; font-weight: 600; }
+.prediction-warnings { padding: .75rem 1rem; margin: 1rem 0; background: #fff5dc; border-radius: 8px; color: #634500; }
+.confidence-range p { font-size: .9rem; line-height: 1.5; }
+.market-context h3 { margin-top: 0; }
+.rent-sensitivity { background: white; }
+@media (max-width: 768px) {
+  .result-main { grid-template-columns: 1fr; padding: 1rem; }
+  .form-section, .map-section, .result-section { padding: 1rem; }
+  .App-main { padding: 1rem; }
+  .coordinates-section { grid-template-columns: 1fr; }
+}

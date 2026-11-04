@@ -1,383 +1,166 @@
-# San Francisco Rent Prediction & Investment Analysis App
+# San Francisco rent benchmark & cash-flow explorer
 
-A full-stack machine learning application that predicts rental prices and provides comprehensive investment cash flow analysis for San Francisco properties.
+A deployed React + Flask application that estimates recent-tenancy rents using
+San Francisco's official 2026 rental inventory. It combines property and building
+features with measured model error, a calibration range, and cash-flow scenarios.
 
-## Railway deployment
+**Website:** https://sf-rent-and-roi-predictor.up.railway.app/
 
-Deploy this repository with the service **Root Directory** set to `/`. The root
-`Dockerfile` builds React and runs Flask with Gunicorn on Railway's `PORT`.
-Remove any old service-level build/start command overrides so the Dockerfile's
-command runs. Use `/health` as the health check; it returns 503 if the model fails
-to load. The same public URL serves the website and the API.
+## What the estimate means
 
-The model requires scikit-learn 1.6.1, matching its serialized training version.
-Install `backend/requirements.txt` rather than relying on the committed macOS
-virtual environment. Docker excludes that environment from the build context.
+The target is **owner-reported occupied monthly rent for tenancies begun in
+2025–2026**, recorded in the 2026 inventory. It is not a quote for a new market
+listing. The data can include subsidized tenancies and rent-regulated units;
+subsidy status is unavailable. Rents are reported in $250 bands, floor area in
+250-square-foot bands, and locations are anonymized to city blocks.
 
-For local development, install Python 3.11 dependencies with
-`pip install -r rent-prediction-app/backend/requirements.txt`, run
-`python rent-prediction-app/backend/real_model_api.py`, and run `npm start` inside
-`rent-prediction-app/frontend`. React proxies API calls to port 8000. For a
-separate frontend deployment, `REACT_APP_API_URL` can override the backend's public
-URL before building. Production builds default to the existing Railway backend;
-the Docker build sets `/` to use the combined service instead.
+The application shows Zillow's citywide asking-rent index separately as context.
+It does not multiply individual predictions by that index or claim validation on
+advertised asking rents.
 
-## Features
+## Measured performance
 
-- **Machine Learning Model**: Gradient Boosting Regressor with 81.2% accuracy trained on SF rental data
-- **Flask API Backend**: Serves your actual trained model for real-time predictions
-- **React Frontend**: Interactive UI with map-based location selection
-- **Address Geocoding**: Convert street addresses to coordinates automatically
-- **Investment Analysis**: Complete cash flow analysis including:
-  - Mortgage payment calculations (P&I)
-  - Property taxes (using SF rate of 1.25%)
-  - Insurance, utilities, maintenance costs
-  - Property management fees
-  - Vacancy loss estimates
-  - Net monthly cash flow
-  - Cash-on-Cash return
-  - Investment recommendation (Good/Poor)
+The shipped model is a histogram gradient boosting regressor, selected using
+validation data from three model families. Test records were not used for model
+selection, fitting, or interval calibration.
 
-## Project Structure
+| Evaluation on 433 tenancies begun in 2026, in 180 unseen blocks | MAE / month | RMSE / month | R² |
+| --- | ---: | ---: | ---: |
+| Richer model, available source features | $572.32 | $838.99 | 0.5522 |
+| Independently selected five-feature baseline | $624.93 | $878.36 | 0.5092 |
+| Richer model, optional building/utility details all unknown | $585.68 | $848.75 | 0.5417 |
+| Training-set median baseline | $993.07 | $1,288.38 | -0.0560 |
 
-```
-rent-prediction-app/
-├── backend/
-│   ├── real_model_api.py          # Flask API using your trained model
-│   ├── requirements_flask.txt     # Python dependencies
-│   └── models/
-│       └── gradient_boosting_model.pkl  # Your trained ML model
-├── frontend/
-│   ├── src/
-│   │   ├── App.js                 # Main React component
-│   │   ├── App.css                # Styling
-│   │   └── components/
-│   │       ├── PropertyForm.js    # Property & investment input form
-│   │       ├── PredictionResult.js # Results with cash flow analysis
-│   │       └── MapView.js         # Interactive map for location
-│   └── package.json               # Node dependencies
-└── README.md
-```
+The richer model reduces MAE by **8.42%** against the five-feature baseline on
+this test set. Errors are against reported band midpoints, not exact lease rents.
+These results replace the former unsupported “81.2% accuracy” claim. They are
+not directly comparable to the legacy model's undocumented evaluation.
 
-## Prerequisites
+The standard range is calibrated for nominal 80% coverage using 3,208 reserved
+2025 observations. It covered **72.06%** of the 2026 test midpoints: temporal drift
+and dataset bias mean it must not be presented as a guaranteed 80% range. The API
+also measures a separate range when all optional details are unknown. Partial
+missingness may behave differently. Both ranges and their limitations are visible.
 
-- **Python 3.11** (required for scikit-learn compatibility)
-- **Node.js 16+** and npm
-- **Git** (optional, for cloning)
+Full results, candidate scores, subgroup errors and exclusions:
+[`evaluation.json`](rent-prediction-app/backend/models/evaluation.json).
 
-## Quick Start
+## Data and features
 
-### 1. Clone or Download the Project
+Source: [San Francisco Rent Board Housing Inventory, DataSF](https://data.sf.gov/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn).
+License: Open Data Commons Public Domain Dedication and License.
+Snapshot: November 4, 2026; 23,141 recent-tenancy source records, **20,271 usable
+records across 2,159 blocks**. The exact query, exclusions and SHA-256 checksum
+are saved in [`provenance.json`](rent-prediction-app/backend/data/provenance.json).
+The normalized compressed snapshot is included so training does not require a
+live API or silently switch to synthetic data.
 
-```bash
-cd /path/to/Machine-Learning-Fall-2025
-```
+Inputs include bedrooms, bathrooms, floor area and location, plus:
 
-### 2. Backend Setup
+- Building year and number of units.
+- Inclusion of water/sewer, gas, electricity and garbage/recycling in rent.
+- Neighborhood inferred from the nearest published block location.
+- Derived building age, area per bedroom, and distances to downtown and Golden Gate Park.
 
-```bash
-# Navigate to backend
-cd rent-prediction-app/backend
+Unknown utilities remain unknown, rather than being interpreted as “no.” Training
+includes optional-feature masking to support incomplete user inputs. The model
+does not invent parking, laundry or condition effects absent from this source.
 
-# Create Python 3.11 virtual environment
-python3.11 -m venv venv_real
+Excluded: no-rent and unbounded $7,000+ rent records, unknown or unsupported floor
+areas, shared bathrooms, missing geography and future/missing tenancy dates.
+The model therefore underrepresents luxury homes. Bedrooms 5+ and bathrooms 3+
+are grouped by the source. Supported floor area is 251–4,000 sq ft; larger
+properties generate a data-support warning.
 
-# Activate virtual environment
-source venv_real/bin/activate  # Mac/Linux
-# OR
-venv_real\Scripts\activate     # Windows
+Market context: [Zillow Research, ZORI](https://www.zillow.com/research/data/).
+Data provided by Zillow Group. The stored citywide series currently ends in
+September 2026. Zillow terms apply; this is an aggregate rent index, not an
+individual property valuation.
 
-# Install dependencies
-pip install flask flask-cors scikit-learn numpy pandas joblib requests
+## Reproduce the model
 
-# Start the API server
-python real_model_api.py
+Use Python 3.11. From the repository root:
+
+```sh
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r rent-prediction-app/backend/requirements.txt
+# Refit and evaluate the included, checksum-verified snapshot:
+python rent-prediction-app/backend/train_model.py
+# Optional: refresh official data and market context before retraining:
+python rent-prediction-app/backend/prepare_data.py
 ```
 
-You should see:
-```
-🎯 SUCCESS: Your ACTUAL trained Gradient Boosting model loaded!
-✅ Model parameters:
-   - n_estimators: 200
-   - learning_rate: 0.05
-   - max_depth: 3
-🌐 API available at: http://localhost:8000
+Refresh queries currently target the documented 2026 inventory and tenancies begun
+in 2025–2026. Moving to a new reporting year requires deliberately updating the
+cohort, feature-year reference and evaluation strategy, not just rerunning the
+script indefinitely.
+
+A fixed-seed group split keeps every city block in a single partition. Model
+selection uses 8,682 training observations and 2,439 validation observations from
+2025. The selected model is refit on those 11,121 observations. Calibration uses
+3,208 other 2025 observations. The primary final test uses only 2026 tenancies
+from the held-out blocks. Remaining 2026 development-block records are unused.
+Split membership is included for audit. Public source record IDs are never sent
+in prediction responses. The original model is retained only as a legacy artifact.
+
+## Run locally
+
+```sh
+python rent-prediction-app/backend/real_model_api.py
 ```
 
-### 3. Frontend Setup (New Terminal)
+In another terminal:
 
-```bash
-# Navigate to frontend
+```sh
 cd rent-prediction-app/frontend
-
-# Install dependencies
-npm install
-
-# Start React development server
+npm ci
 npm start
 ```
 
-The app will open at **http://localhost:3000**
+React development requests proxy to port 8000. Production defaults to the existing
+Railway backend. `REACT_APP_API_URL` overrides it at build time; bare hostnames are
+normalized to HTTPS. The root Docker build uses same-origin API requests.
 
-## How to Use
+## Tests
 
-### Basic Rent Prediction
-
-1. Enter property details:
-   - Bedrooms (0-10)
-   - Bathrooms (0.5-10)
-   - Square footage (250-10,000)
-
-2. Set location using one of three methods:
-   - **Address**: Type an address and click "Convert to Coordinates"
-   - **Map**: Click on the interactive map
-   - **Manual**: Enter latitude/longitude directly
-
-3. Click **"Predict Rent & ROI"** to get your estimated monthly rent
-
-### Investment Analysis
-
-To see full cash flow analysis, also enter:
-
-| Field | Description | Default |
-|-------|-------------|---------|
-| Purchase Price | Property purchase price | Required |
-| Down Payment % | Percentage of purchase price | 20% |
-| Interest Rate % | Annual mortgage interest rate | 7% |
-| Loan Term | Mortgage length in years | 30 |
-| Property Tax Rate % | Annual property tax rate | 1.25% (SF) |
-| Insurance | Monthly insurance cost | $0 |
-| Utilities | Monthly utilities cost | $0 |
-| Maintenance % | % of rent for maintenance | 0% |
-| Property Mgmt % | % of rent for management | 0% |
-| Vacancy Rate % | Expected vacancy percentage | 0% |
-
-### Understanding Results
-
-The app calculates:
-
-- **Gross Rental Yield**: `(Annual Rent / Purchase Price) × 100`
-- **Monthly Mortgage (P&I)**: Standard amortization formula
-- **Property Tax**: `(Purchase Price × Tax Rate) / 12`
-- **Net Cash Flow**: `Rental Income - All Monthly Expenses`
-- **Cash-on-Cash Return**: `(Annual Cash Flow / Down Payment) × 100`
-
-**Investment Decision**:
-- ✅ **GOOD INVESTMENT**: Positive monthly cash flow
-- ❌ **POOR INVESTMENT**: Negative monthly cash flow
-
-## How It Works
-
-### System Architecture
-
-```
-┌─────────────────┐    HTTP POST     ┌─────────────────┐    predict()   ┌─────────────────┐
-│  React Frontend │ ───────────────► │   Flask API     │ ─────────────► │  ML Model       │
-│  localhost:3000 │                  │  localhost:8000 │                │  (.pkl file)    │
-│                 │ ◄─────────────── │                 │ ◄───────────── │  81.2% accuracy │
-│  Investment     │    JSON Response │  /predict       │   $4,251/mo    │                 │
-│  Calculations   │                  │  /geocode       │                │                 │
-└─────────────────┘                  └─────────────────┘                └─────────────────┘
+```sh
+python -m unittest discover -s rent-prediction-app/backend -p 'test_deployment.py'
+python -m unittest discover -s rent-prediction-app/backend -p 'test_model_quality.py'
+cd rent-prediction-app/frontend
+npm test -- --watchAll=false --runInBand
+npm run build
 ```
 
-### Data Flow
+Tests cover real model loading and predictions, input validation, optional-feature
+handling, interval responses, data integrity, block separation, HTML-response
+protection, form persistence, and API URL normalization.
 
-1. **User Input** → PropertyForm.js collects property & investment details
-2. **API Request** → App.js sends POST to Flask backend
-3. **ML Prediction** → real_model_api.py runs your trained model
-4. **Response** → Backend returns predicted rent + input features
-5. **Calculations** → PredictionResult.js computes all investment metrics
-6. **Display** → Results shown with visual indicators
+## API
 
-### Key Formulas
+- `GET /health`: model readiness; 503 if the model fails to load.
+- `GET /model-info`: evaluation report, provenance and market context.
+- `POST /predict`: rent benchmark, calibration range, warnings and echoed inputs.
+- `POST /geocode`: San Francisco street-address lookup.
 
-**Monthly Mortgage Payment (P&I)**:
-```
-M = P × [r(1+r)^n] / [(1+r)^n - 1]
+Required prediction fields: `beds`, `baths`, `footage`, `latitude`, `longitude`.
+Optional model fields: `yearBuilt`, `buildingUnits`, `waterIncluded`, `gasIncluded`,
+`electricityIncluded`, `refuseIncluded`. Utility values are 1, 0, or unknown/null.
 
-Where:
-P = Loan Amount (Purchase Price - Down Payment)
-r = Monthly Interest Rate (Annual Rate / 12 / 100)
-n = Total Payments (Years × 12)
-```
+The investment explorer includes mortgage principal/interest, property tax,
+insurance, owner-paid utilities, HOA dues, maintenance, management and vacancy.
+It shows break-even rent and cash flow at the lower/upper rent estimates rather
+than making a definitive good/bad investment recommendation. Closing costs,
+major repairs, income taxes and appreciation are outside the calculation.
 
-**Example**: $636,000 loan @ 7% for 30 years = $4,231/month
+## Railway deployment
 
-**Cash Flow**:
-```
-Net Monthly Cash Flow = Rental Income - (Mortgage + Taxes + Insurance + Utilities + Maintenance + Management + Vacancy)
-```
+The existing GitHub-connected frontend and backend services deploy from `main`.
+The backend runs `real_model_api:app`; install `requirements.txt` (the alternative
+`requirements_flask.txt` delegates to it). Keep the evaluated model and feature
+module together. No training or live-data downloads occur at application startup.
 
-## Model Details
-
-| Metric | Value |
-|--------|-------|
-| Model Type | Gradient Boosting Regressor |
-| Accuracy | 81.2% |
-| R² Score | 0.7875 |
-| RMSE | $1,093.80 |
-| Training Data | San Francisco rental listings |
-| Features | Beds, Baths, Sqft, Latitude, Longitude |
-
-**Model Parameters**:
-```python
-GradientBoostingRegressor(
-    n_estimators=200,
-    learning_rate=0.05,
-    max_depth=3,
-    min_samples_split=10,
-    random_state=42
-)
-```
-
-## API Reference
-
-### Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | API info and status |
-| GET | `/health` | Health check with model details |
-| POST | `/predict` | Predict rent for a property |
-| POST | `/geocode` | Convert address to coordinates |
-
-### Example: Predict Rent
-
-**Request**:
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "beds": 2,
-    "baths": 1.5,
-    "footage": 1200,
-    "latitude": 37.7749,
-    "longitude": -122.4194,
-    "purchasePrice": 795000,
-    "downPaymentPercent": 20,
-    "interestRate": 7,
-    "loanTermYears": 30,
-    "propertyTaxRate": 1.25,
-    "insuranceMonthly": 200,
-    "utilitiesMonthly": 150,
-    "maintenancePercent": 1,
-    "propertyManagementPercent": 8,
-    "vacancyRate": 5
-  }'
-```
-
-**Response**:
-```json
-{
-  "estimated_rent": 4251.32,
-  "input_features": {
-    "beds": 2,
-    "baths": 1.5,
-    "footage": 1200,
-    "latitude": 37.7749,
-    "longitude": -122.4194,
-    "purchasePrice": 795000,
-    "downPaymentPercent": 20,
-    "interestRate": 7,
-    "loanTermYears": 30,
-    "propertyTaxRate": 1.25,
-    "insuranceMonthly": 200,
-    "utilitiesMonthly": 150,
-    "maintenancePercent": 1,
-    "propertyManagementPercent": 8,
-    "vacancyRate": 5
-  },
-  "model_info": {
-    "type": "Gradient Boosting Regressor",
-    "accuracy": "81.2%",
-    "trained_on": "SF Rental Data",
-    "features": ["Beds", "Baths", "Footage", "Latitude", "Longitude"]
-  }
-}
-```
-
-### Example: Geocode Address
-
-**Request**:
-```bash
-curl -X POST "http://localhost:8000/geocode" \
-  -H "Content-Type: application/json" \
-  -d '{"address": "123 Market Street"}'
-```
-
-**Response**:
-```json
-{
-  "latitude": 37.7937,
-  "longitude": -122.3965,
-  "display_name": "123 Market Street, San Francisco, CA",
-  "success": true
-}
-```
-
-## Troubleshooting
-
-### Backend Issues
-
-**"Model not loaded" error**:
-```bash
-# Ensure model file exists
-ls backend/models/gradient_boosting_model.pkl
-
-# Check Python version (must be 3.11)
-python --version
-```
-
-**Port already in use**:
-```bash
-# Kill existing process on port 8000
-lsof -ti:8000 | xargs kill -9
-```
-
-### Frontend Issues
-
-**npm install fails**:
-```bash
-rm -rf node_modules package-lock.json
-npm cache clean --force
-npm install
-```
-
-**CORS errors**:
-- Ensure backend is running on port 8000
-- Ensure frontend is running on port 3000
-
-### Model Issues
-
-**Scikit-learn version warning**:
-- This is a compatibility warning but doesn't affect predictions
-- Model will work correctly
-
-**Recreating the model** (if .pkl file is missing):
-```python
-# In your Jupyter notebook / Google Colab
-import joblib
-joblib.dump(gb_model, 'gradient_boosting_model.pkl')
-
-# Download and place in backend/models/
-```
-
-## Technologies Used
-
-- **Backend**: Python 3.11, Flask, scikit-learn, NumPy, Pandas
-- **Frontend**: React 18, Axios, Leaflet (maps)
-- **ML Model**: Gradient Boosting Regressor
-- **APIs**: OpenStreetMap Nominatim (geocoding)
-
-## Project Highlights
-
-✅ Real ML model trained on SF rental data (81.2% accuracy)
-✅ Complete cash flow analysis for investment decisions
-✅ Interactive map-based location selection
-✅ Address-to-coordinates geocoding
-✅ Responsive UI with clear investment recommendations
-✅ Full-stack architecture (React + Flask + scikit-learn)
-
-## License
-
-This project was created for educational purposes as part of a Machine Learning course.
+For a combined service, set Root Directory to `/`. Railway detects the root
+Dockerfile, which builds React and starts Gunicorn on Railway's `PORT`. Remove old
+build/start overrides for that combined deployment. `/health` is the readiness
+check. The committed macOS virtual environment is not used by Docker.
