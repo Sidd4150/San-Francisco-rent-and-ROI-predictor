@@ -1,7 +1,11 @@
 import React from 'react';
+import { isValidPrediction } from '../prediction';
 
 const PredictionResult = ({ prediction }) => {
   if (!prediction) return null;
+  if (!isValidPrediction(prediction)) {
+    return <p role="alert">Unable to display this prediction. Please try again.</p>;
+  }
 
   const { estimated_rent, input_features } = prediction;
   

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from './api';
+import { isValidPrediction } from './prediction';
 import PropertyForm from './components/PropertyForm';
 import PredictionResult from './components/PredictionResult';
 import MapView from './components/MapView';
@@ -36,11 +37,14 @@ function App() {
     try {
       console.log('Sending data:', formData); // Debug log
       const response = await api.post('/predict', formData);
+      if (!isValidPrediction(response.data)) {
+        throw new Error('The prediction service returned an unexpected response. Please try again shortly.');
+      }
       console.log('Received response:', response.data); // Debug log
       setPrediction(response.data);
       setPropertyData(formData);
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.detail || 'An error occurred while predicting rent');
+      setError(err.response?.data?.error || err.response?.data?.detail || err.message || 'An error occurred while predicting rent');
       console.error('Prediction error:', err);
     } finally {
       setLoading(false);
