@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const PropertyForm = ({ onSubmit, loading, initialData }) => {
   const [formData, setFormData] = useState({
@@ -27,7 +27,7 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData(prev => ({ ...prev, ...initialData }));
     }
   }, [initialData]);
 
@@ -63,7 +63,7 @@ const PropertyForm = ({ onSubmit, loading, initialData }) => {
     setGeocodeError(null);
 
     try {
-      const response = await axios.post('http://localhost:8000/geocode', {
+      const response = await api.post('/geocode', {
         address: formData.address
       });
 

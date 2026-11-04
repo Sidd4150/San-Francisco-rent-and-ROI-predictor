@@ -3,7 +3,7 @@ Flask API using your ACTUAL trained Gradient Boosting model
 """
 
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import joblib
 import numpy as np
@@ -11,11 +11,13 @@ from pathlib import Path
 import requests
 from urllib.parse import quote
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_BUILD = BASE_DIR.parent / "frontend" / "build"
+app = Flask(__name__, static_folder=str(FRONTEND_BUILD / "static"))
 CORS(app)  # Enable CORS for all routes
 
 # Load your REAL trained model
-MODEL_PATH = Path("models/gradient_boosting_model.pkl")
+MODEL_PATH = BASE_DIR / "models" / "gradient_boosting_model.pkl"
 try:
     model = joblib.load(MODEL_PATH)
     print("🎯 SUCCESS: Your ACTUAL trained Gradient Boosting model loaded!")
@@ -37,6 +39,8 @@ except Exception as e:
 
 @app.route('/')
 def home():
+    if (FRONTEND_BUILD / "index.html").is_file():
+        return send_from_directory(FRONTEND_BUILD, "index.html")
     return jsonify({
         "message": "Welcome to SF Rent Prediction API",
         "model_status": "REAL Gradient Boosting Model (81.2% accuracy)" if model_loaded else "Model not loaded",
@@ -46,12 +50,21 @@ def home():
         }
     })
 
+@app.route('/<path:filename>')
+def frontend_asset(filename):
+    return send_from_directory(FRONTEND_BUILD, filename)
+
 @app.route('/geocode', methods=['POST'])
 def geocode_address():
     """Convert address to latitude/longitude coordinates."""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Request body must be a JSON object"}), 400
         address = data.get('address', '')
+        if not isinstance(address, str):
+            return jsonify({"error": "Address must be a string"}), 400
+        address = address.strip()
         
         if not address:
             return jsonify({"error": "Address is required"}), 400
@@ -66,7 +79,7 @@ def geocode_address():
         
         # Add user agent header (required by Nominatim)
         headers = {'User-Agent': 'SF-Rent-Predictor/1.0'}
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code == 200:
             results = response.json()
@@ -118,17 +131,19 @@ def health():
         }
     
     return jsonify({
-        "status": "healthy",
+        "status": "healthy" if model_loaded else "unhealthy",
         "model_loaded": model_loaded,
         "model_type": "REAL Gradient Boosting Model (81.2% accuracy)" if model_loaded else "No model loaded",
         "model_parameters": model_details
-    })
+    }), 200 if model_loaded else 503
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         # Get JSON data from request
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Request body must be a JSON object"}), 400
         
         # Debug log the entire request payload
         print("\n🔍 DEBUG: Full request payload:")
@@ -225,9 +240,12 @@ def predict():
             }
         })
         
+    except (TypeError, ValueError, OverflowError):
+        return jsonify({"error": "Property and investment fields must contain valid numbers"}), 400
     except Exception as e:
+        app.logger.exception("Prediction failed")
         return jsonify({
-            "error": f"Prediction error: {str(e)}"
+            "error": "Prediction failed. Please try again."
         }), 500
 
 if __name__ == '__main__':

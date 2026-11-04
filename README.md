@@ -2,6 +2,26 @@
 
 A full-stack machine learning application that predicts rental prices and provides comprehensive investment cash flow analysis for San Francisco properties.
 
+## Railway deployment
+
+Deploy this repository with the service **Root Directory** set to `/`. The root
+`Dockerfile` builds React and runs Flask with Gunicorn on Railway's `PORT`.
+Remove any old service-level build/start command overrides so the Dockerfile's
+command runs. Use `/health` as the health check; it returns 503 if the model fails
+to load. The same public URL serves the website and the API.
+
+The model requires scikit-learn 1.6.1, matching its serialized training version.
+Install `backend/requirements.txt` rather than relying on the committed macOS
+virtual environment. Docker excludes that environment from the build context.
+
+For local development, install Python 3.11 dependencies with
+`pip install -r rent-prediction-app/backend/requirements.txt`, run
+`python rent-prediction-app/backend/real_model_api.py`, and run `npm start` inside
+`rent-prediction-app/frontend`. React proxies API calls to port 8000. For a
+separate frontend deployment, `REACT_APP_API_URL` can override the backend's public
+URL before building. Production builds default to the existing Railway backend;
+the Docker build sets `/` to use the combined service instead.
+
 ## Features
 
 - **Machine Learning Model**: Gradient Boosting Regressor with 81.2% accuracy trained on SF rental data

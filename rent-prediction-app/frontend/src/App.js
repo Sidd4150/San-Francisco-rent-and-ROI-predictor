@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from './api';
 import PropertyForm from './components/PropertyForm';
 import PredictionResult from './components/PredictionResult';
 import MapView from './components/MapView';
 import './App.css';
 
-const API_BASE_URL = "https://san-francisco-rent-and-roi-predictor-production.up.railway.app";
+
 
 function App() {
   const [prediction, setPrediction] = useState(null);
@@ -23,8 +23,8 @@ function App() {
   const handleLocationSelect = (lat, lng) => {
     setPropertyData(prev => ({
       ...prev,
-      latitude: lat,
-      longitude: lng
+      latitude: Math.round(lat * 10000) / 10000,
+      longitude: Math.round(lng * 10000) / 10000
     }));
   };
 
@@ -35,7 +35,7 @@ function App() {
 
     try {
       console.log('Sending data:', formData); // Debug log
-      const response = await axios.post(`${API_BASE_URL}/predict`, formData);
+      const response = await api.post('/predict', formData);
       console.log('Received response:', response.data); // Debug log
       setPrediction(response.data);
       setPropertyData(formData);
@@ -97,7 +97,7 @@ function App() {
       </main>
 
       <footer className="App-footer">
-        <p>Built with React & FastAPI | ML Model: Gradient Boosting (81.2% accuracy)</p>
+        <p>Built with React & Flask | ML Model: Gradient Boosting (81.2% accuracy)</p>
       </footer>
     </div>
   );

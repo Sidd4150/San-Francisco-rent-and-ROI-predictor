@@ -1,0 +1,7 @@
+.git
+**/venv*
+**/node_modules
+**/build
+**/__pycache__
+**/.env*
+**/.DS_Store
