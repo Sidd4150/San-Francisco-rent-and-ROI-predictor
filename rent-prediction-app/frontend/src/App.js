@@ -52,8 +52,17 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>San Francisco Rent Predictor</h1>
-        <p>Estimate recent-tenancy rents with San Francisco housing data</p>
+        <div className="header-inner">
+          <div className="top-bar">
+            <div className="wordmark"><span className="wordmark-symbol">SF</span> RENT ANALYSIS</div>
+            <a href="https://data.sf.gov/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn" target="_blank" rel="noreferrer">View source data ↗</a>
+          </div>
+          <div className="header-copy">
+            <p className="eyebrow">2026 housing inventory</p>
+            <h1>San Francisco rent analysis.</h1>
+            <p className="header-description">Estimate rent, review the range, and work through the numbers.</p>
+          </div>
+        </div>
       </header>
 
       <main className="App-main">
@@ -65,7 +74,7 @@ function App() {
           </aside>
           <div className="content-grid">
             <div className="form-section">
-              <h2>Property Details</h2>
+              <div className="section-label"><span>01</span><h2>Property details</h2></div>
               <PropertyForm
                 onSubmit={handleSubmit}
                 loading={loading}
@@ -81,7 +90,8 @@ function App() {
             </div>
 
             <div className="map-section">
-              <h2>Select Location</h2>
+              <div className="section-label"><span>02</span><h2>Location</h2></div>
+              <p className="section-caption">Select the property on the map, or enter its address in the form.</p>
               <MapView
                 onLocationSelect={handleLocationSelect}
                 currentLocation={{
@@ -93,6 +103,7 @@ function App() {
                 <span>Lat: {propertyData.latitude.toFixed(4)}</span>
                 <span>Lng: {propertyData.longitude.toFixed(4)}</span>
               </div>
+              <p className="map-source">Neighborhood is inferred from the nearest published block. Exact addresses are not part of the training data.</p>
             </div>
           </div>
 
@@ -105,7 +116,10 @@ function App() {
       </main>
 
       <footer className="App-footer">
-        <p>React &amp; Flask · Measured model performance and data sources are shown with each estimate.</p>
+        <div className="footer-inner">
+          <p>San Francisco · Rent &amp; cash flow</p>
+          <p>Based on reported rents. Model performance accompanies each estimate.</p>
+        </div>
       </footer>
     </div>
   );

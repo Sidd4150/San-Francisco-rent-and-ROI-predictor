@@ -174,7 +174,7 @@ const PredictionResult = ({ prediction }) => {
       {/* Detailed Cash Flow Analysis */}
       {cashFlowAnalysis && (
         <div className="cash-flow-analysis">
-          <h3>💸 Cash Flow Analysis</h3>
+          <h3>Cash flow</h3>
           
           <div className="cash-flow-summary">
             <div className={`investment-decision ${cashFlowAnalysis.isGoodInvestment ? 'positive' : 'negative'}`}>
@@ -208,7 +208,7 @@ const PredictionResult = ({ prediction }) => {
 
           <div className="cash-flow-breakdown">
             <div className="income-section">
-              <h4>💰 Monthly Income</h4>
+              <h4>Monthly income</h4>
               <ul>
                 <li>
                   <span>Rental Income</span>
@@ -222,7 +222,7 @@ const PredictionResult = ({ prediction }) => {
             </div>
 
             <div className="expense-section">
-              <h4>💸 Monthly Expenses</h4>
+              <h4>Monthly expenses</h4>
               <ul>
                 <li>
                   <span>Mortgage (P&I)</span>

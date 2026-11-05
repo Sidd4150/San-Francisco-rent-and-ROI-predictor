@@ -97,7 +97,7 @@ const PropertyForm = ({ onSubmit, loading, initialData, onLocationChange }) => {
 
   return (
     <form onSubmit={handleSubmit} className="property-form">
-
+      <div className="property-basics">
       <div className="form-group">
         <label htmlFor="beds">Bedrooms</label>
         <input
@@ -143,8 +143,9 @@ const PropertyForm = ({ onSubmit, loading, initialData, onLocationChange }) => {
         />
       </div>
 
+      </div>
       <div className="location-section">
-        <h3>Location (Choose one method)</h3>
+        <h3>Address &amp; coordinates</h3>
         
         <div className="form-group">
           <label htmlFor="address">Street Address (San Francisco)</label>
@@ -235,7 +236,7 @@ const PropertyForm = ({ onSubmit, loading, initialData, onLocationChange }) => {
       </fieldset>
 
       <div className="investment-section">
-        <h3>💰 Investment Analysis (Optional)</h3>
+        <h3>Investment assumptions</h3>
         
         <div className="investment-grid">
           <div className="form-group">
